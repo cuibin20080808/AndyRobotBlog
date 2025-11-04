@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>夸克网盘分享</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <style>
+    :root {
+      --dark-bg: #121212;
+      --card-bg: #1e1e1e;
+      --card-border: #333333;
+      --accent: #00bcd4;
+      --accent-hover: #00e5ff;
+      --text-primary: #f0f0f0;
+      --text-secondary: #aaaaaa;
+      --success: #4caf50;
+      --success-hover: #66bb6a;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--dark-bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      padding: 30px 0;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .header h1 {
+      font-size: 2.8rem;
+      font-weight: 300;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent), #4fc3f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 15px rgba(0, 188, 212, 0.3);
+      position: relative;
+      display: inline-block;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      border-radius: 50%;
+    }
+
+    .items-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 25px;
+    }
+
+    .item-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .item-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      transform: scaleX(0);
+      transition: transform 0.5s ease;
+    }
+
+    .item-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 188, 212, 0.2);
+      border-color: var(--accent);
+    }
+
+    .item-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .item-image {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      margin-bottom: 20px;
+      background-color: #2d2d2d;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .item-card:hover .item-image {
+      background-color: #333333;
+    }
+
+    .item-name {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+      text-align: center;
+    }
+
+    .copy-btn {
+      background-color: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 12px 20px;
+      border-radius: 30px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+      margin-bottom: 15px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .copy-btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 188, 212, 0.1);
+      transform: translateX(-100%);
+      transition: transform 0.5s ease;
+    }
+
+    .copy-btn:hover {
+      background-color: rgba(0, 188, 212, 0.1);
+      box-shadow: 0 0 15px rgba(0, 188, 212, 0.3);
+      color: var(--accent-hover);
+    }
+
+    .copy-btn:hover::after {
+      transform: translateX(0);
+    }
+
+    .copy-btn.copied {
+      background-color: rgba(76, 175, 80, 0.1);
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+    }
+
+    .share-time {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      text-align: center;
+      font-weight: 300;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+
+    .error {
+      text-align: center;
+      padding: 50px;
+      font-size: 1.2rem;
+      color: #f44336;
+    }
+
+    .loading::after {
+      content: "";
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 188, 212, 0.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      margin-left: 10px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .items-container {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+      }
+      
+      .header h1 {
+        font-size: 2.2rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .items-container {
+        grid-template-columns: 1fr;
+      }
+      
+      body {
+        padding: 15px;
+      }
+      
+      .header h1 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    <div class="header">
+      <h1>夸克网盘分享</h1>
+    </div>
+    
+    <div v-if="loading" class="loading">
+      加载中...
+    </div>
+    
+    <div v-else-if="error" class="error">
+      {{ error }}
+    </div>
+    
+    <div v-else class="items-container">
+      <div class="item-card" v-for="item in items" :key="item.name">
+        <img 
+          :src="'image/' + item.name + '.png'" 
+          :alt="item.name" 
+          class="item-image"
+          @error="handleImageError"
+        >
+        <div class="item-name">{{ item.name }}</div>
+        <button 
+          :class="['copy-btn', { copied: item.copied }]" 
+          @click="copyLink(item)"
+        >
+          {{ item.copied ? '已复制' : '复制下载链接' }}
+        </button>
+        <div class="share-time">{{ item.time }}</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        loading: true,
+        items: [],
+        error: null
+      },
+      mounted() {
+        // 从data.json文件加载数据
+        fetch('data.json')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('网络响应错误: ' + response.status);
+            }
+            return response.json();
+          })
+          .then(data => {
+            console.log('数据加载成功:', data);
+            this.items = data.map(item => ({
+              ...item,
+              copied: false
+            }));
+            this.loading = false;
+          })
+          .catch(error => {
+            console.error('数据加载失败:', error);
+            this.error = '数据加载失败: ' + error.message + '。如果您是直接打开HTML文件，请尝试使用本地服务器运行此页面。';
+            this.loading = false;
+          });
+      },
+      methods: {
+        extractLink(address) {
+          // 从分享地址中提取链接
+          const match = address.match(/链接：(https?:\/\/[^\s]+)/);
+          return match ? match[1] : '';
+        },
+        
+        copyLink(item) {
+          const link = this.extractLink(item.address);
+          if (!link) {
+            alert('无法提取下载链接');
+            return;
+          }
+          
+          // 使用Clipboard API复制链接
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(link).then(() => {
+              // 更新按钮状态
+              this.$set(item, 'copied', true);
+              setTimeout(() => {
+                this.$set(item, 'copied', false);
+              }, 2000);
+            }).catch(err => {
+              console.error('复制失败:', err);
+              this.fallbackCopyTextToClipboard(link);
+            });
+          } else {
+            this.fallbackCopyTextToClipboard(link);
+          }
+        },
+        
+        fallbackCopyTextToClipboard(text) {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          
+          try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+              alert('链接已复制到剪贴板');
+            } else {
+              alert('复制失败');
+            }
+          } catch (err) {
+            console.error('Fallback: Oops, unable to copy', err);
+            alert('复制失败');
+          }
+          
+          document.body.removeChild(textArea);
+        },
+        
+        handleImageError(event) {
+          // 图片加载失败时显示默认图片或占位符
+          event.target.src = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23eee"/><text x="50" y="55" font-family="Arial" font-size="12" text-anchor="middle" fill="%23999">无图片</text></svg>';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
